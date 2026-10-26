@@ -85,49 +85,79 @@ export async function listSharedFiles(): Promise<SharedFile[]> {
   return Array.from(map.values());
 }
 
+/** Result of fanning a shared file out to every agent. */
+export interface SharedWriteResult {
+  file: SharedFile;
+  /** Agents whose memory/prompt update failed, with the reason. */
+  failed: Array<{ agentId: string; error: string }>;
+}
+
 /** Create or update a shared knowledge file and push it to every agent. */
 export async function writeSharedFile(
   name: string,
   description: string,
   content: string,
-  addToPrompts = false,
-): Promise<SharedFile> {
+): Promise<SharedWriteResult> {
   const agentIds = await getAllAgentIds();
   const existing = await listSharedFiles();
   const names = Array.from(new Set([...existing.map((f) => f.name), name])).sort();
   const index = buildSharedIndex(names);
   const fileContent = buildSharedFileContent(name, description, content);
 
+  const failed: Array<{ agentId: string; error: string }> = [];
+  const written: string[] = [];
+
   for (const agentId of agentIds) {
-    await writeMemoryFile(agentId, "shared/MEMORY.md", index);
-    await writeMemoryFile(agentId, `shared/${name}.md`, fileContent);
+    try {
+      await writeMemoryFile(agentId, "shared/MEMORY.md", index);
+      await writeMemoryFile(agentId, `shared/${name}.md`, fileContent);
+      written.push(agentId);
+    } catch (err) {
+      failed.push({
+        agentId,
+        error: `memory write: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      continue;
+    }
+    // Always point the agent at the shared file so it knows to read it.
+    try {
+      await addPromptReference(agentId, name);
+    } catch (err) {
+      failed.push({
+        agentId,
+        error: `prompt reference: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
   }
 
-  if (addToPrompts) {
-    await addPromptReference(agentIds, name);
-  }
-
-  return { name, description, content, agentIds };
+  return {
+    file: { name, description, content, agentIds: written },
+    failed,
+  };
 }
 
 function buildPromptReference(name: string): string {
   return `\n\n### Shared Knowledge\nRefer to \`shared/${name}.md\` for shared project knowledge before answering.\n`;
 }
 
-/** Append a reference to the shared file in each agent's system prompt. */
-async function addPromptReference(agentIds: string[], name: string): Promise<void> {
+/** Append a reference to the shared file in an agent's system prompt. */
+async function addPromptReference(agentId: string, name: string): Promise<void> {
   const ref = buildPromptReference(name);
-  for (const agentId of agentIds) {
-    try {
-      const agent = await getAgent(agentId);
-      const system = agent.system ?? "";
-      // Avoid duplicating the reference if it's already present.
-      if (system.includes(`shared/${name}.md`)) continue;
-      await updateAgent(agentId, { system: system + ref });
-    } catch {
-      // skip agents whose prompt couldn't be updated
-    }
-  }
+  const agent = await getAgent(agentId);
+  const system = agent.system ?? "";
+  // Avoid duplicating the reference if it's already present.
+  if (system.includes(`shared/${name}.md`)) return;
+  await updateAgent(agentId, { system: system + ref });
+}
+
+/** Remove the reference to a shared file from an agent's system prompt. */
+async function removePromptReference(agentId: string, name: string): Promise<void> {
+  const agent = await getAgent(agentId);
+  const system = agent.system ?? "";
+  const ref = buildPromptReference(name);
+  const next = system.replace(ref, "").replace(/\n{3,}/g, "\n\n").trimEnd();
+  if (next === system) return;
+  await updateAgent(agentId, { system: next });
 }
 
 /** Remove a shared knowledge file from every agent and rebuild the index. */
@@ -159,6 +189,13 @@ export async function deleteSharedFile(name: string): Promise<void> {
     );
     if (!res.success) {
       throw new Error(res.error ?? "Failed to delete shared file");
+    }
+
+    // Remove the "Refer to shared/<name>.md" instruction from the system prompt.
+    try {
+      await removePromptReference(agentId, name);
+    } catch {
+      // prompt cleanup is best-effort; file removal already succeeded
     }
 
     // If no shared files remain, remove the now-empty index too.

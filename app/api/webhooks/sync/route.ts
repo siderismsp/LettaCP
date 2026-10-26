@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
     name?: string;
     description?: string;
     content?: string;
-    addToPrompts?: boolean;
   };
   try {
     body = await req.json();
@@ -47,13 +46,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const file = await writeSharedFile(
+    const result = await writeSharedFile(
       name,
       body.description?.trim() ?? "",
       body.content,
-      body.addToPrompts ?? false,
     );
-    return NextResponse.json({ ok: true, file });
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },

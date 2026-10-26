@@ -63,10 +63,7 @@ export function SharedKnowledgePanel() {
         <SharedFileModal
           file={modal === "new" ? null : modal}
           onClose={() => setModal(null)}
-          onSaved={() => {
-            setModal(null);
-            refetch();
-          }}
+          onSaved={() => refetch()}
         />
       )}
     </section>
@@ -126,6 +123,11 @@ function SharedFileCard({
           {file.agentIds.length} agent{file.agentIds.length === 1 ? "" : "s"}
         </Badge>
       </div>
+      {file.agentIds.length === 0 && (
+        <p className="mt-2 text-xs text-amber-400">
+          Not pushed to any agents — the memory write failed.
+        </p>
+      )}
     </div>
   );
 }
@@ -142,19 +144,29 @@ function SharedFileModal({
   const [name, setName] = useState(file?.name ?? "");
   const [description, setDescription] = useState(file?.description ?? "");
   const [content, setContent] = useState(file?.content ?? "");
-  const [addToPrompts, setAddToPrompts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
     setSaved(false);
     setError(null);
+    setWarning(null);
     try {
-      await saveSharedFile(name, description, content, addToPrompts);
+      const result = await saveSharedFile(name, description, content);
       setSaved(true);
-      onSaved();
+      onSaved(); // refresh the list behind the modal
+      if (result.failed.length > 0) {
+        setWarning(
+          `Saved to ${result.file.agentIds.length} agent(s), but ${result.failed.length} failed: ${result.failed
+            .map((f) => f.agentId)
+            .join(", ")}`,
+        );
+      } else {
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -209,26 +221,21 @@ function SharedFileModal({
             />
           </Field>
 
-          <label className="flex items-start gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3">
-            <input
-              type="checkbox"
-              checked={addToPrompts}
-              onChange={(e) => setAddToPrompts(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
-            />
-            <span className="text-xs leading-relaxed">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3">
+            <p className="text-xs leading-relaxed">
               <span className="font-medium text-[var(--color-foreground)]">
-                Append a reference to each agent&apos;s system prompt
+                Referenced in every agent&apos;s system prompt
               </span>
               <span className="mt-0.5 block text-[var(--color-muted)]">
-                Adds &ldquo;Refer to shared/&lt;name&gt;.md for shared project
-                knowledge before answering.&rdquo; to every agent so they know to
-                read it.
+                &ldquo;Refer to shared/&lt;name&gt;.md for shared project knowledge
+                before answering.&rdquo; is appended automatically so each agent
+                knows to read the file.
               </span>
-            </span>
-          </label>
+            </p>
+          </div>
 
           {error && <p className="text-xs text-red-400">{error.message}</p>}
+          {warning && <p className="text-xs text-amber-400">⚠ {warning}</p>}
 
           <div className="flex items-center gap-2">
             <button

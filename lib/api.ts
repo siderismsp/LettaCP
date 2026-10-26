@@ -79,16 +79,16 @@ export function fetchSharedFiles() {
   return request<{ files: SharedFile[] }>("/api/shared-memory");
 }
 
-export function saveSharedFile(
-  name: string,
-  description: string,
-  content: string,
-  addToPrompts = false,
-) {
-  return request<{ file: SharedFile }>("/api/shared-memory", {
+export interface SharedWriteResult {
+  file: SharedFile;
+  failed: Array<{ agentId: string; error: string }>;
+}
+
+export function saveSharedFile(name: string, description: string, content: string) {
+  return request<SharedWriteResult>("/api/shared-memory", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, description, content, addToPrompts }),
+    body: JSON.stringify({ name, description, content }),
   });
 }
 

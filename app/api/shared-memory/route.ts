@@ -19,7 +19,6 @@ export async function POST(req: Request) {
       name?: string;
       description?: string;
       content?: string;
-      addToPrompts?: boolean;
     };
     if (!body.name || !body.name.trim() || typeof body.content !== "string") {
       return NextResponse.json(
@@ -35,13 +34,12 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const file = await writeSharedFile(
+    const result = await writeSharedFile(
       name,
       body.description?.trim() ?? "",
       body.content,
-      body.addToPrompts ?? false,
     );
-    return NextResponse.json({ file });
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },

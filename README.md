@@ -9,7 +9,7 @@ A self-hosted **administration dashboard** for [Letta App Servers](https://githu
 - **Agent Inspector** — Browse agents, view tool bindings, edit the model, and save memory changes.
 - **Dual-mode memory inspection** — Core memory (`system/*`) and file-based **MemFS** are split into two panes so you can read and edit either one.
 - **Dark Galaxy orbital map** — A React Flow (`@xyflow/react`) visualization that renders your agents and their memory files as nodes orbiting a central core, with click-to-inspect drawers.
-- **Shared knowledge / blocks** — Inspect shared memory blocks across agents, filter by agent, and download snapshots.
+- **Shared knowledge / blocks** — Inspect shared memory blocks across agents, filter by agent, and download snapshots. Shared files are written to every agent's memory **and automatically referenced in each agent's system prompt** so agents know to read them; any per-agent write failures are surfaced as warnings.
 - **Network topology** — See how agents, memory files, and shared blocks are connected at a glance.
 - **Activity panel** — Stream per-agent activity from the App Server.
 - **Runtime settings** — Configure the Letta App Server URL, Ollama endpoint, and default embedding provider live from the Settings page — no code edits or redeploys needed.
