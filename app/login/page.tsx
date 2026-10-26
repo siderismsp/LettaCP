@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Lock, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -13,7 +13,6 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const from = params.get("from") ?? "/";
 
@@ -25,11 +24,14 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
+        signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -37,11 +39,23 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      router.replace(from);
-      router.refresh();
+      // Full navigation so the session cookie is applied and any proxy
+      // redirect back to /login is handled as a fresh page load (avoids the
+      // button getting stuck in the "Authenticating…" state).
+      let dest = from;
+      if (!dest.startsWith("/") || dest.startsWith("//")) dest = "/";
+      window.location.replace(dest);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "Authentication request timed out. Check the server is reachable.",
+        );
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
       setLoading(false);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

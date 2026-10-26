@@ -7,12 +7,32 @@ import type { AgentView, MemoryFile, SharedFile } from "./types";
  */
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Request failed (${res.status}): ${text}`);
+  const controller = new AbortController();
+  const timeoutMs = getTimeoutMs();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Request failed (${res.status}): ${text}`);
+    }
+    return res.json() as Promise<T>;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json() as Promise<T>;
+}
+
+const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Client fetch timeout (configurable via NEXT_PUBLIC_API_TIMEOUT_MS). */
+function getTimeoutMs(): number {
+  const n = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_TIMEOUT_MS;
 }
 
 export function fetchAgents() {

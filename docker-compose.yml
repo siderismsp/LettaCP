@@ -19,6 +19,8 @@ services:
       # Token used for the App Server WebSocket handshake (set this!).
       LETTA_AUTH_TOKEN: ${LETTA_AUTH_TOKEN:-}
       LETTA_REQUEST_TIMEOUT_MS: ${LETTA_REQUEST_TIMEOUT_MS:-120000}
+      # Abort client-side fetches after this many ms (prevents infinite spinners)
+      NEXT_PUBLIC_API_TIMEOUT_MS: ${NEXT_PUBLIC_API_TIMEOUT_MS:-30000}
       # Local Ollama instance used to populate model selectors
       # (overridable at runtime from the Settings page / localStorage)
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}

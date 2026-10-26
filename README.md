@@ -123,6 +123,7 @@ npm run start                # runs .next/standalone/server.js
 | `NEXT_PUBLIC_DEFAULT_LETTA_URL` | No | Build-time client default when no runtime override is set. |
 | `LETTA_AUTH_TOKEN` | Yes | Token used for the App Server WebSocket handshake (`Authorization: Bearer`). |
 | `LETTA_REQUEST_TIMEOUT_MS` | No | Request timeout for the App Server client (default `120000`). |
+| `NEXT_PUBLIC_API_TIMEOUT_MS` | No | Abort client-side fetches after this many ms so the UI never spins forever (default `30000`). |
 | `OLLAMA_BASE_URL` | No | Fallback Ollama base URL used to populate model selectors (default `http://localhost:11434`). |
 | `NEXT_PUBLIC_DEFAULT_EMBEDDING_MODEL` | No | Default embedding model (default `nomic-embed-text`). |
 | `NEXT_PUBLIC_DEFAULT_EMBEDDING_ENDPOINT` | No | Default embedding endpoint (default empty). |
