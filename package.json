@@ -1,0 +1,32 @@
+{
+  "name": "letta-cp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('.next/standalone')){fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true}); if(fs.existsSync('public'))fs.cpSync('public','.next/standalone/public',{recursive:true});}\"",
+    "start": "node .next/standalone/server.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@letta-ai/letta-agent-sdk": "^0.8.53",
+    "@xyflow/react": "^12.12.0",
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

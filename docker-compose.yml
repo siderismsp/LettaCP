@@ -1,0 +1,29 @@
+services:
+  letta-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: letta-cp-dashboard
+    container_name: letta-dashboard
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Set this to enable password protection on the dashboard.
+      # Leave empty to disable auth. Prefer setting via .env (not committed).
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+      # Letta App Server (backend the dashboard proxies to)
+      LETTA_APP_SERVER_URL: ${LETTA_APP_SERVER_URL:-http://localhost:8283}
+      NEXT_PUBLIC_DEFAULT_LETTA_URL: ${NEXT_PUBLIC_DEFAULT_LETTA_URL:-http://localhost:8283}
+      # Token used for the App Server WebSocket handshake (set this!).
+      LETTA_AUTH_TOKEN: ${LETTA_AUTH_TOKEN:-}
+      LETTA_REQUEST_TIMEOUT_MS: ${LETTA_REQUEST_TIMEOUT_MS:-120000}
+      # Local Ollama instance used to populate model selectors
+      # (overridable at runtime from the Settings page / localStorage)
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}
+      # Default embedding provider (overridable at runtime from Settings)
+      NEXT_PUBLIC_DEFAULT_EMBEDDING_MODEL: ${NEXT_PUBLIC_DEFAULT_EMBEDDING_MODEL:-nomic-embed-text}
+      NEXT_PUBLIC_DEFAULT_EMBEDDING_ENDPOINT: ${NEXT_PUBLIC_DEFAULT_EMBEDDING_ENDPOINT:-}
+      # Shared secret for POST /api/webhooks/sync (set this for webhook auth)
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}

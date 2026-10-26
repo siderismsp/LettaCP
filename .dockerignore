@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Next.js build output
+.next
+out
+
+# Env files (runtime values come from docker-compose / environment)
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Docker files (not needed inside the image build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
